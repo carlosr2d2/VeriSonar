@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+desktop/dist/
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.local
+*.pem
+
+# Data & models
+data/uploads/
+data/reports/
+data/models/**
+!data/models/.gitkeep
+*.wav
+*.mp3
+*.ogg
+*.webm
+*.m4a
+*.amr
+!data/samples/**
+!data/samples/**/*.wav
+!data/samples/**/*.mp3
+!data/samples/**/*.ogg
+
+# Entrevistas reales / PII (no versionar)
+data/real_samples/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Docker volumes
+postgres_data/
+redis_data/
+grafana_data/
+prometheus_data/

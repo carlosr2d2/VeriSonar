@@ -1,0 +1,12 @@
+# Overlay fase 2: procesamiento online en tiempo real.
+# docker compose -f docker-compose.yml -f docker-compose.online.yml up -d
+
+services:
+  backend:
+    environment:
+      PROCESSING_MODE: online
+  celery-worker:
+    environment:
+      PROCESSING_MODE: online
+    deploy:
+      replicas: 3

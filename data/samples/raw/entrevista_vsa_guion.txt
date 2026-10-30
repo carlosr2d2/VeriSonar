@@ -1,0 +1,31 @@
+Guion de laboratorio (texto propio, voces TTS).
+No es un examen VSA comercial ni una entrevista forense.
+
+Entrevistadora: Microsoft Helena (es-ES)
+Entrevistada: Microsoft Sabina (es-MX)
+Tema ficticio: faltante de inventario.
+
+--- 10_entrevista_vsa_directa.wav ---
+P: Buenos días. Esta es una entrevista de laboratorio. Responda con claridad. ¿Está dispuesta a contestar las preguntas?
+R: Sí.
+P: ¿Se llama usted Laura Méndez?
+R: Sí. Me llamo Laura Méndez.
+P: ¿Nació usted en México?
+R: Sí.
+P: ¿Está usted ahora sentada en esta sala?
+R: Sí.
+P: ¿Trabaja usted en el almacén desde el año pasado?
+R: Sí. Entro a las siete y salgo a las tres.
+P: ¿Sabe usted que faltan cajas del inventario?
+R: Sí. Me lo comentaron el lunes en la reunión.
+P: ¿Tomó usted mercancía del almacén sin registrarla?
+R: No.
+P: ¿Vio usted a alguien sacar cajas sin firmar la bitácora?
+R: No. Ese día revisé el expediente, firmamos el acta y salimos a las doce.
+P: ¿Ha mentido alguna vez para evitar un problema en el trabajo?
+R: Una vez llegué tarde y dije que había tráfico. Nada más.
+P: ¿Quiere agregar algo?
+R: No. Eso es lo que ocurrió.
+
+--- 11_entrevista_vsa_atenuada.wav ---
+Mismas preguntas. Respuestas con hedging («o sea», «te juro», «no recuerdo», «no estoy segura»).

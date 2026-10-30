@@ -1,0 +1,29 @@
+{
+  "name": "verisonar-desktop",
+  "version": "0.1.0",
+  "description": "Cliente Windows de VeriSonar (Electron + Next.js)",
+  "main": "main.js",
+  "author": "VeriSonar",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "pack:win": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "local.verisonar.desktop",
+    "productName": "VeriSonar",
+    "directories": { "output": "dist" },
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "VeriSonar-Setup-${version}.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  }
+}
