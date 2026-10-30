@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import ClipDialogue from "@/components/ClipDialogue";
+import ExportReportModal from "@/components/ExportReportModal";
 import Shell from "@/components/Shell";
 import SpeechWaveform from "@/components/SpeechWaveform";
 import { InterviewExchange, InterviewTurn, Report, VsaItem, api, getToken } from "@/lib/api";
@@ -149,6 +150,7 @@ export default function ReportDetailPage() {
   const params = useParams<{ id: string }>();
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     if (!params.id) return;
@@ -211,8 +213,8 @@ export default function ReportDetailPage() {
             </article>
           </section>
           <div className="page-actions">
-            <button className="btn secondary" onClick={() => download(`/api/v1/reports/${report.id}/pdf`, `verisonar-${report.id}.pdf`)}>
-              Descargar PDF
+            <button className="btn secondary" onClick={() => setExportOpen(true)}>
+              Crear informe
             </button>
             <button className="btn secondary" onClick={() => download(`/api/v1/reports/${report.id}/json`, `verisonar-${report.id}.json`)}>
               Descargar JSON
@@ -314,37 +316,42 @@ export default function ReportDetailPage() {
               />
             </section>
           ) : null}
-          <section className="card" style={{ marginTop: 16 }}>
-            <h3>Transcripción ({report.stt_engine || "sin motor"})</h3>
-            {turns.length ? (
-              <div className="dialogue">
-                {turns.map((turn, index) => {
-                  const target = clipTarget(turn, exchanges);
-                  return (
-                    <p key={`${turn.start}-${index}`}>
-                      <span className={turn.role === "interrogador" ? "role-q" : "role-a"}>{turn.label}:</span>{" "}
-                      {target ? (
-                        <a
-                          className="turn-link"
-                          href={`#clip-${target.index}-${target.part}`}
-                          title={target.part === "q" ? `Ir a la pregunta ${target.index}` : `Ir a la respuesta ${target.index}`}
-                        >
-                          {turn.text}
-                        </a>
-                      ) : (
-                        turn.text
-                      )}
-                    </p>
-                  );
-                })}
-              </div>
-            ) : (
-              <p>
-                {report.transcription ||
-                  "Sin transcripción. Coloque modelos Vosk/Whisper en /data/models para operación STT offline."}
-              </p>
-            )}
-          </section>
+          <details className="card card-fold" style={{ marginTop: 16 }}>
+            <summary>
+              <h3>Transcripción ({report.stt_engine || "sin motor"})</h3>
+              <span className="card-fold-action" />
+            </summary>
+            <div className="card-fold-panel">
+              {turns.length ? (
+                <div className="dialogue">
+                  {turns.map((turn, index) => {
+                    const target = clipTarget(turn, exchanges);
+                    return (
+                      <p key={`${turn.start}-${index}`}>
+                        <span className={turn.role === "interrogador" ? "role-q" : "role-a"}>{turn.label}:</span>{" "}
+                        {target ? (
+                          <a
+                            className="turn-link"
+                            href={`#clip-${target.index}-${target.part}`}
+                            title={target.part === "q" ? `Ir a la pregunta ${target.index}` : `Ir a la respuesta ${target.index}`}
+                          >
+                            {turn.text}
+                          </a>
+                        ) : (
+                          turn.text
+                        )}
+                      </p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p>
+                  {report.transcription ||
+                    "Sin transcripción. Coloque modelos Vosk/Whisper en /data/models para operación STT offline."}
+                </p>
+              )}
+            </div>
+          </details>
           {exchanges.length ? (
             <section className="card" style={{ marginTop: 16 }}>
               <h3>Clips pregunta y respuesta</h3>
@@ -390,6 +397,8 @@ export default function ReportDetailPage() {
                       includeCombInReport={clip.include_comb_in_report === true}
                       vsaReportNote={clip.vsa_report_note || ""}
                       combReportNote={clip.comb_report_note || ""}
+                      vsaReportNoteColor={clip.vsa_report_note_color || ""}
+                      combReportNoteColor={clip.comb_report_note_color || ""}
                       onReportUpdated={setReport}
                     />
                   </article>
@@ -453,6 +462,13 @@ export default function ReportDetailPage() {
             </section>
           ) : null}
           <p className="disclaimer">{report.findings?.disclaimer}</p>
+          {exportOpen ? (
+            <ExportReportModal
+              reportId={report.id}
+              exchanges={exchanges}
+              onClose={() => setExportOpen(false)}
+            />
+          ) : null}
         </>
       )}
     </Shell>

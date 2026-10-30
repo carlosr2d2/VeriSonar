@@ -411,6 +411,10 @@ def test_apply_clip_chart_inclusion_toggles_report_flags() -> None:
     assert out["exchanges"][0]["include_vsa_in_report"] is False
     out = apply_clip_chart_inclusion(interview, 11, vsa_note="  Pico irregular en la respuesta  ")
     assert out["exchanges"][0]["vsa_report_note"] == "Pico irregular en la respuesta"
+    out = apply_clip_chart_inclusion(interview, 11, vsa_note_color="#e11")
+    assert out["exchanges"][0]["vsa_report_note_color"] == "#EE1111"
+    out = apply_clip_chart_inclusion(interview, 11, comb_note_color="not-a-color")
+    assert out["exchanges"][0]["comb_report_note_color"] == ""
 
 
 def test_comb_profile_keeps_pitch_cycles_without_padding() -> None:

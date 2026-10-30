@@ -28,10 +28,18 @@ type SpeechWaveformProps = {
   includeCombInReport?: boolean;
   vsaReportNote?: string;
   combReportNote?: string;
+  vsaReportNoteColor?: string;
+  combReportNoteColor?: string;
   onReportUpdated?: (report: Report) => void;
 };
 
 const CHART_NOTE_MAX = 100;
+const NOTE_COLOR_DEFAULT = "#f8fafc";
+
+function noteColorValue(value?: string): string {
+  const raw = (value || "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw.toLowerCase() : NOTE_COLOR_DEFAULT;
+}
 
 const INK = {
   paper: "#1a3a5c",
@@ -57,6 +65,14 @@ function formatSecMs(seconds: number) {
   return `${s}:${ms.toString().padStart(3, "0")}`;
 }
 
+function canvasFont(spec: string): string {
+  if (typeof document === "undefined") {
+    return `${spec} "IBM Plex Sans", "Segoe UI", sans-serif`;
+  }
+  const family = getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim();
+  return family ? `${spec} ${family}` : `${spec} "IBM Plex Sans", "Segoe UI", sans-serif`;
+}
+
 function drawStartEndLabels(
   ctx: CanvasRenderingContext2D,
   left: number,
@@ -67,7 +83,7 @@ function drawStartEndLabels(
 ) {
   if (startSec == null || endSec == null || !Number.isFinite(startSec) || !Number.isFinite(endSec)) return;
   ctx.fillStyle = INK.time;
-  ctx.font = "600 13px Inter, Segoe UI, sans-serif";
+  ctx.font = canvasFont("600 13px");
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
   ctx.fillText(`Inicio ${formatSecMs(startSec)}`, left, y);
@@ -105,7 +121,7 @@ function drawOscillogram(
     ctx.fillRect(q0, 0, Math.max(1, a0 - q0), height);
     ctx.fillStyle = INK.answer;
     ctx.fillRect(a0, 0, Math.max(1, a1 - a0), height);
-    ctx.font = "600 11px Inter, Segoe UI, sans-serif";
+    ctx.font = canvasFont("600 11px");
     ctx.fillStyle = INK.questionInk;
     if (a0 - q0 > 54) ctx.fillText("Pregunta", q0 + 8, 16);
     ctx.fillStyle = INK.answerInk;
@@ -154,7 +170,7 @@ function drawOscillogram(
     ctx.stroke();
   }
   ctx.fillStyle = INK.muted;
-  ctx.font = "11px Inter, Segoe UI, sans-serif";
+  ctx.font = canvasFont("11px");
   ctx.textAlign = "left";
   const step = duration > 30 ? 5 : duration > 12 ? 2 : duration > 2 ? 1 : duration > 0.8 ? 0.2 : 0.1;
   for (let t = 0; t <= duration + 0.01; t += step) {
@@ -207,7 +223,7 @@ function drawStressChart(
   ctx.stroke();
 
   ctx.fillStyle = INK.muted;
-  ctx.font = "11px Inter, Segoe UI, sans-serif";
+  ctx.font = canvasFont("11px");
   ctx.textAlign = "center";
   const step = duration > 30 ? 5 : duration > 12 ? 2 : 1;
   for (let t = 0; t <= duration + 0.01; t += step) {
@@ -308,7 +324,7 @@ function drawCombChart(
   ctx.stroke();
 
   ctx.fillStyle = INK.muted;
-  ctx.font = "11px Inter, Segoe UI, sans-serif";
+  ctx.font = canvasFont("11px");
   ctx.textAlign = "center";
   const step = tickStep(duration);
   const decimals = step < 0.1 ? 2 : 1;
@@ -389,6 +405,8 @@ export default function SpeechWaveform({
   includeCombInReport = false,
   vsaReportNote = "",
   combReportNote = "",
+  vsaReportNoteColor = "",
+  combReportNoteColor = "",
   onReportUpdated,
 }: SpeechWaveformProps) {
   const waveRef = useRef<HTMLCanvasElement | null>(null);
@@ -432,6 +450,8 @@ export default function SpeechWaveform({
   const [includeComb, setIncludeComb] = useState(includeCombInReport);
   const [vsaNote, setVsaNote] = useState(vsaReportNote);
   const [combNote, setCombNote] = useState(combReportNote);
+  const [vsaColor, setVsaColor] = useState(noteColorValue(vsaReportNoteColor));
+  const [combColor, setCombColor] = useState(noteColorValue(combReportNoteColor));
   const noteRef = useRef<HTMLInputElement | null>(null);
   const focusNoteRef = useRef(false);
   const [bounds, setBounds] = useState({
@@ -496,7 +516,9 @@ export default function SpeechWaveform({
   useEffect(() => {
     setVsaNote(vsaReportNote);
     setCombNote(combReportNote);
-  }, [vsaReportNote, combReportNote]);
+    setVsaColor(noteColorValue(vsaReportNoteColor));
+    setCombColor(noteColorValue(combReportNoteColor));
+  }, [vsaReportNote, combReportNote, vsaReportNoteColor, combReportNoteColor]);
 
   useEffect(() => {
     if (!audioPath) return;
@@ -856,6 +878,8 @@ export default function SpeechWaveform({
   const includeActive = activeChart === "comb" ? includeComb : includeVsa;
   const activeNote = activeChart === "comb" ? combNote : vsaNote;
   const savedActiveNote = activeChart === "comb" ? combReportNote : vsaReportNote;
+  const activeColor = activeChart === "comb" ? combColor : vsaColor;
+  const savedActiveColor = noteColorValue(activeChart === "comb" ? combReportNoteColor : vsaReportNoteColor);
   const canToggleReportChart = Boolean(reportId) && clipIndex != null;
 
   useEffect(() => {
@@ -869,6 +893,8 @@ export default function SpeechWaveform({
     include_comb?: boolean;
     vsa_note?: string;
     comb_note?: string;
+    vsa_note_color?: string;
+    comb_note_color?: string;
   }) {
     if (!reportId || clipIndex == null) return;
     const updated = await api<Report>(`/api/v1/reports/${reportId}/clips/${clipIndex}/charts`, {
@@ -901,6 +927,17 @@ export default function SpeechWaveform({
     } catch {
       if (activeChart === "comb") setCombNote(combReportNote);
       else setVsaNote(vsaReportNote);
+    }
+  }
+
+  async function saveActiveColor(next: string) {
+    const color = noteColorValue(next);
+    if (color === savedActiveColor) return;
+    try {
+      await saveChartOptions(activeChart === "comb" ? { comb_note_color: color } : { vsa_note_color: color });
+    } catch {
+      if (activeChart === "comb") setCombColor(noteColorValue(combReportNoteColor));
+      else setVsaColor(noteColorValue(vsaReportNoteColor));
     }
   }
 
@@ -1054,6 +1091,7 @@ export default function SpeechWaveform({
                 aria-label={
                   activeChart === "comb" ? "Nota de la gráfica peine" : "Nota de la gráfica VSA"
                 }
+                style={{ color: activeColor }}
                 onChange={(event) => {
                   const value = event.target.value.slice(0, CHART_NOTE_MAX);
                   if (activeChart === "comb") setCombNote(value);
@@ -1069,6 +1107,20 @@ export default function SpeechWaveform({
                   }
                 }}
               />
+              <label className="wave-chart-note-swatch">
+                <input
+                  type="color"
+                  value={activeColor}
+                  aria-label="Color del texto de la nota"
+                  title="Color del texto"
+                  onChange={(event) => {
+                    const value = noteColorValue(event.target.value);
+                    if (activeChart === "comb") setCombColor(value);
+                    else setVsaColor(value);
+                    void saveActiveColor(value);
+                  }}
+                />
+              </label>
               <small>
                 {activeNote.length}/{CHART_NOTE_MAX}
               </small>

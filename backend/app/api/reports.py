@@ -13,7 +13,7 @@ from app.core.audit import write_audit
 from app.core.security import get_current_user
 from app.database import get_db
 from app.models import AnalysisSession, AudioRecord, Report, User
-from app.schemas import ClipBoundsIn, ClipChartsIn, ClipTextIn, ClipWindowOut, ReportOut
+from app.schemas import ClipBoundsIn, ClipChartsIn, ClipTextIn, ClipWindowOut, PdfExportIn, ReportOut
 from app.services.interview import (
     WINDOW_PAD,
     _load_source_wav,
@@ -76,6 +76,33 @@ def download_pdf(
         raise HTTPException(status_code=404, detail="PDF no generado")
     return FileResponse(
         report.pdf_path,
+        media_type="application/pdf",
+        filename=f"verisonar-{report.id}.pdf",
+    )
+
+
+@router.post("/{report_id}/pdf")
+def create_pdf(
+    report_id: str,
+    body: PdfExportIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    report = _owned_report(db, user, report_id)
+    findings = copy.deepcopy(report.findings or {})
+    pdf_path = write_pdf_report(report.id, findings, body.model_dump())
+    report.pdf_path = str(pdf_path)
+    db.commit()
+    write_audit(
+        db,
+        action="report.pdf_created",
+        resource_type="report",
+        resource_id=report.id,
+        payload=body.model_dump(),
+        actor=user,
+    )
+    return FileResponse(
+        str(pdf_path),
         media_type="application/pdf",
         filename=f"verisonar-{report.id}.pdf",
     )
@@ -313,6 +340,8 @@ def adjust_clip_charts(
             include_comb=body.include_comb,
             vsa_note=body.vsa_note,
             comb_note=body.comb_note,
+            vsa_note_color=body.vsa_note_color,
+            comb_note_color=body.comb_note_color,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -336,6 +365,8 @@ def adjust_clip_charts(
             "include_comb": body.include_comb,
             "vsa_note": body.vsa_note,
             "comb_note": body.comb_note,
+            "vsa_note_color": body.vsa_note_color,
+            "comb_note_color": body.comb_note_color,
         },
         actor=user,
     )

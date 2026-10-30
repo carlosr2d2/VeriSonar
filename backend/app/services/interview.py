@@ -942,10 +942,20 @@ def apply_manual_clip(
 
 
 CHART_NOTE_MAX = 100
+_NOTE_COLOR_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
 
 def _chart_note(value: str | None) -> str:
     return (value or "").strip()[:CHART_NOTE_MAX]
+
+
+def _chart_note_color(value: str | None) -> str:
+    raw = (value or "").strip()
+    if not _NOTE_COLOR_RE.match(raw):
+        return ""
+    if len(raw) == 4:
+        raw = "#" + "".join(ch * 2 for ch in raw[1:])
+    return raw.upper()
 
 
 def apply_clip_chart_inclusion(
@@ -955,12 +965,21 @@ def apply_clip_chart_inclusion(
     include_comb: bool | None = None,
     vsa_note: str | None = None,
     comb_note: str | None = None,
+    vsa_note_color: str | None = None,
+    comb_note_color: str | None = None,
 ) -> dict:
     exchanges = list(interview.get("exchanges") or [])
     row = next((item for item in exchanges if int(item.get("index") or 0) == int(clip_index)), None)
     if row is None:
         raise ValueError("Clip no encontrado")
-    if include_vsa is None and include_comb is None and vsa_note is None and comb_note is None:
+    if (
+        include_vsa is None
+        and include_comb is None
+        and vsa_note is None
+        and comb_note is None
+        and vsa_note_color is None
+        and comb_note_color is None
+    ):
         raise ValueError("Indique si la gráfica VSA o peine entra al informe")
     if include_vsa is not None:
         row["include_vsa_in_report"] = bool(include_vsa)
@@ -970,6 +989,10 @@ def apply_clip_chart_inclusion(
         row["vsa_report_note"] = _chart_note(vsa_note)
     if comb_note is not None:
         row["comb_report_note"] = _chart_note(comb_note)
+    if vsa_note_color is not None:
+        row["vsa_report_note_color"] = _chart_note_color(vsa_note_color)
+    if comb_note_color is not None:
+        row["comb_report_note_color"] = _chart_note_color(comb_note_color)
     interview["exchanges"] = exchanges
     return interview
 

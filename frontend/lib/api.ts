@@ -161,6 +161,8 @@ export type InterviewExchange = {
   include_comb_in_report?: boolean;
   vsa_report_note?: string;
   comb_report_note?: string;
+  vsa_report_note_color?: string;
+  comb_report_note_color?: string;
   kind?: string;
   kind_label?: string;
   vsa_score?: number;

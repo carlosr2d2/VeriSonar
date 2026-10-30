@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { Inter, Merriweather } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Serif } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const plexSans = IBM_Plex_Sans({
   subsets: ["latin", "latin-ext"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plex-sans",
   display: "swap",
 });
 
-const merriweather = Merriweather({
+const plexSerif = IBM_Plex_Serif({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-merriweather",
+  weight: ["400", "600", "700"],
+  variable: "--font-plex-serif",
   display: "swap",
 });
 
@@ -22,8 +23,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      <body className={`${inter.variable} ${merriweather.variable}`}>{children}</body>
+    <html lang="es" className={`${plexSans.variable} ${plexSerif.variable}`}>
+      <body className={plexSans.className}>{children}</body>
     </html>
   );
 }

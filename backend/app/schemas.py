@@ -138,6 +138,21 @@ class ClipChartsIn(BaseModel):
     include_comb: bool | None = None
     vsa_note: str | None = Field(default=None, max_length=100)
     comb_note: str | None = Field(default=None, max_length=100)
+    vsa_note_color: str | None = Field(default=None, max_length=7)
+    comb_note_color: str | None = Field(default=None, max_length=7)
+
+
+class PdfExportIn(BaseModel):
+    exam: bool = True
+    protocol: bool = True
+    items: bool = True
+    findings: bool = True
+    clips: bool = True
+    oscillogram: bool = True
+    vsa_chart: bool = True
+    comb_chart: bool = True
+    notes: bool = True
+    clip_indexes: list[int] = Field(default_factory=list)
 
 
 class ClipWindowOut(BaseModel):
