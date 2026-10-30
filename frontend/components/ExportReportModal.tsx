@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import HelpTip from "@/components/HelpTip";
 import { InterviewExchange, getToken } from "@/lib/api";
 
 type ExportReportModalProps = {
@@ -30,7 +31,7 @@ const INITIAL: ExportState = {
   oscillogram: true,
   vsaChart: true,
   combChart: true,
-  notes: true,
+  notes: false,
 };
 
 function snippet(value: string | undefined, max = 72): string {
@@ -38,10 +39,25 @@ function snippet(value: string | undefined, max = 72): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
+function markedOnComb(clip: InterviewExchange): boolean {
+  return clip.include_comb_in_report === true;
+}
+
+function combNoteText(clip: InterviewExchange): string {
+  return (clip.comb_report_note || "").trim();
+}
+
 export default function ExportReportModal({ reportId, exchanges, onClose }: ExportReportModalProps) {
   const allIndexes = useMemo(() => exchanges.map((clip) => clip.index), [exchanges]);
-  const [opts, setOpts] = useState<ExportState>(INITIAL);
-  const [clipIndexes, setClipIndexes] = useState<number[]>(allIndexes);
+  const markedIndexes = useMemo(
+    () => exchanges.filter(markedOnComb).map((clip) => clip.index),
+    [exchanges],
+  );
+  const [opts, setOpts] = useState<ExportState>(() => ({
+    ...INITIAL,
+    notes: exchanges.some((clip) => markedOnComb(clip) && Boolean(combNoteText(clip))),
+  }));
+  const [clipIndexes, setClipIndexes] = useState<number[]>(markedIndexes);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -140,7 +156,16 @@ export default function ExportReportModal({ reportId, exchanges, onClose }: Expo
 
         <div className="export-grid">
           <section>
-            <h3>Secciones</h3>
+            <h3>
+              Secciones
+              <HelpTip title="Secciones del informe">
+                <p>Elija qué capítulos entran al PDF. Desmarcar uno lo omite por completo.</p>
+                <p>
+                  En clips, el oscilograma es la onda de audio; VSA y peine son las gráficas de la respuesta; las notas
+                  son el texto que escribió al marcar «Adicionar al informe».
+                </p>
+              </HelpTip>
+            </h3>
             <label className="export-check">
               <input type="checkbox" checked={opts.exam} onChange={() => toggle("exam")} />
               1. Datos del examen
@@ -198,7 +223,16 @@ export default function ExportReportModal({ reportId, exchanges, onClose }: Expo
 
           <section className={!opts.clips ? "is-disabled" : ""}>
             <div className="export-answers-head">
-              <h3>Respuestas seleccionadas</h3>
+              <h3>
+                Respuestas seleccionadas
+                <HelpTip title="Respuestas seleccionadas">
+                  <p>
+                    Por defecto no se marca ningún clip. Si usted adicionó la gráfica peine de una respuesta, ese clip
+                    aparece seleccionado. Si escribió una nota, se muestra debajo.
+                  </p>
+                  <p>Use Todas o Ninguna para cambiar el conjunto, o marque clips uno a uno.</p>
+                </HelpTip>
+              </h3>
               <div className="export-mini-actions">
                 <button type="button" disabled={!opts.clips || busy} onClick={() => setClipIndexes(allIndexes)}>
                   Todas
@@ -210,21 +244,36 @@ export default function ExportReportModal({ reportId, exchanges, onClose }: Expo
             </div>
             <div className="export-answers">
               {exchanges.length ? (
-                exchanges.map((clip) => (
-                  <label key={clip.index} className="export-check export-answer">
-                    <input
-                      type="checkbox"
-                      checked={clipIndexes.includes(clip.index)}
-                      disabled={!opts.clips}
-                      onChange={() => toggleClip(clip.index)}
-                    />
-                    <span>
-                      <strong>Clip {clip.index}</strong>
-                      <em>{snippet(clip.question)}</em>
-                      <small>{snippet(clip.answer, 60)}</small>
-                    </span>
-                  </label>
-                ))
+                exchanges.map((clip) => {
+                  const note = combNoteText(clip);
+                  const selected = clipIndexes.includes(clip.index);
+                  return (
+                    <label key={clip.index} className="export-check export-answer">
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        disabled={!opts.clips}
+                        onChange={() => toggleClip(clip.index)}
+                      />
+                      <span>
+                        <strong>
+                          Clip {clip.index}
+                          {markedOnComb(clip) ? <span className="export-marked">Peine</span> : null}
+                        </strong>
+                        <em>{snippet(clip.question)}</em>
+                        <small>{snippet(clip.answer, 60)}</small>
+                        {note ? (
+                          <small
+                            className="export-answer-note"
+                            style={clip.comb_report_note_color ? { color: clip.comb_report_note_color } : undefined}
+                          >
+                            Nota: {snippet(note, 100)}
+                          </small>
+                        ) : null}
+                      </span>
+                    </label>
+                  );
+                })
               ) : (
                 <p className="export-empty">No hay clips en este expediente.</p>
               )}

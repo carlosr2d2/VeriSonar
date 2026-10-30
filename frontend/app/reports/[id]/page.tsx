@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import ClipDialogue from "@/components/ClipDialogue";
 import ExportReportModal from "@/components/ExportReportModal";
+import HelpTip from "@/components/HelpTip";
 import Shell from "@/components/Shell";
 import SpeechWaveform from "@/components/SpeechWaveform";
 import { InterviewExchange, InterviewTurn, Report, VsaItem, api, getToken } from "@/lib/api";
@@ -103,7 +104,7 @@ function ItemTick({ x, y, payload }: { x?: number; y?: number; payload?: { value
       }}
     >
       <title>{`Ir a la pregunta ${payload.value}`}</title>
-      <text x={x} y={y} dy={14} textAnchor="middle" fill="#93c5fd" fontSize={12} fontWeight={600}>
+      <text x={x} y={y} dy={14} textAnchor="middle" fill="var(--chart-tick)" fontSize={12} fontWeight={600}>
         {payload.value}
       </text>
     </g>
@@ -193,21 +194,58 @@ export default function ReportDetailPage() {
           ) : null}
           <section className="grid">
             <article className="card">
-              <h3>Confiabilidad</h3>
+              <h3>
+                Confiabilidad
+                <HelpTip title="Confiabilidad">
+                  <p>
+                    Estima qué tan usable es la señal y el protocolo (audio, recortes, controles). Un valor bajo pide
+                    revisar el expediente, no invalidar a la persona evaluada.
+                  </p>
+                  <p>No es un veredicto de verdad o mentira.</p>
+                </HelpTip>
+              </h3>
               <div className="metric teal">{Math.round(report.reliability_index * 100)}%</div>
             </article>
             <article className="card">
-              <h3>Índice de riesgo</h3>
+              <h3>
+                Índice de riesgo
+                <HelpTip title="Índice de riesgo">
+                  <p>
+                    Agrega pistas acústicas y de protocolo en una sola cifra. Es un <b>indicio analítico</b> para
+                    priorizar clips, no una prueba de decepción.
+                  </p>
+                </HelpTip>
+              </h3>
               <div className={`metric ${report.deception_index >= 0.5 ? "danger" : "warn"}`}>
                 {Math.round(report.deception_index * 100)}%
               </div>
             </article>
             <article className="card">
-              <h3>Índice VSA</h3>
+              <h3>
+                Índice VSA
+                <HelpTip title="Índice VSA">
+                  <p>
+                    Promedio de los ítems relevantes frente a la línea base de control del mismo evaluado. Valores más
+                    altos indican más desviación en esas preguntas, no un resultado binario.
+                  </p>
+                </HelpTip>
+              </h3>
               <div className="metric">{vsa ? vsa.vsa_index.toFixed(2) : "—"}</div>
             </article>
             <article className="card">
-              <h3>Línea base</h3>
+              <h3>
+                Línea base
+                <HelpTip title="Línea base">
+                  <p>
+                    Media del puntaje VSA en las respuestas de <b>control</b> (preguntas neutras del mismo protocolo).
+                    Cada ítem se compara contra esta referencia.
+                  </p>
+                  <p>
+                    Un ítem se marca si supera aproximadamente 12% y 0.08 sobre esta línea. El recuento debajo indica
+                    cuántos clips quedaron sobre ese umbral.
+                  </p>
+                </HelpTip>
+              </h3>
               <div className="metric">{vsa ? vsa.baseline.toFixed(2) : "—"}</div>
               <p className="kpi-note">{vsa ? `${vsa.flagged_count} ítem(s) sobre el umbral` : "Sin clips VSA"}</p>
             </article>
@@ -269,19 +307,34 @@ export default function ReportDetailPage() {
           ) : null}
           {chart.length ? (
             <section className="card" style={{ marginTop: 16, height: 320 }}>
-              <h3>Puntaje VSA por ítem</h3>
+              <h3>
+                Puntaje VSA por ítem
+                <HelpTip title="Puntaje VSA por ítem">
+                  <p>Cada barra es un clip del protocolo. El color indica el tipo de pregunta:</p>
+                  <ul>
+                    <li>Verde: control</li>
+                    <li>Azul: estímulo</li>
+                    <li>Ámbar: relevante</li>
+                    <li>Rojo: sobre la línea base</li>
+                  </ul>
+                  <p>
+                    La línea punteada es la línea base. Clic en una barra o en el número para ir a esa pregunta o
+                    respuesta.
+                  </p>
+                </HelpTip>
+              </h3>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart className="vsa-item-chart" data={chart} barCategoryGap="18%">
-                  <CartesianGrid stroke="#1e3a5f" strokeDasharray="3 6" vertical={false} />
-                  <XAxis dataKey="name" stroke="#94A3B8" axisLine={false} tickLine={false} tick={<ItemTick />} />
-                  <YAxis domain={[0, 1]} stroke="#94A3B8" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 12 }} />
+                  <CartesianGrid stroke="var(--line)" strokeDasharray="3 6" vertical={false} />
+                  <XAxis dataKey="name" stroke="var(--muted)" axisLine={false} tickLine={false} tick={<ItemTick />} />
+                  <YAxis domain={[0, 1]} stroke="var(--muted)" axisLine={false} tickLine={false} tick={{ fill: "var(--muted)", fontSize: 12 }} />
                   <Tooltip
-                    cursor={{ fill: "rgba(248, 250, 252, 0.04)" }}
+                    cursor={{ fill: "var(--chart-cursor)" }}
                     content={<ItemTooltip />}
                     wrapperStyle={{ outline: "none", pointerEvents: "auto" }}
                   />
                   {typeof vsa?.baseline === "number" ? (
-                    <ReferenceLine y={vsa.baseline} stroke="#14B8A6" strokeDasharray="4 4" />
+                    <ReferenceLine y={vsa.baseline} stroke="var(--primary)" strokeDasharray="4 4" />
                   ) : null}
                   <Bar
                     dataKey="v"

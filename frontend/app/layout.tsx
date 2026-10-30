@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Serif } from "next/font/google";
+import ThemeProvider from "@/components/ThemeProvider";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -23,8 +25,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${plexSans.variable} ${plexSerif.variable}`}>
-      <body className={plexSans.className}>{children}</body>
+    <html lang="es" data-theme="dark" className={`${plexSans.variable} ${plexSerif.variable}`} suppressHydrationWarning>
+      <body className={plexSans.className}>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { PointerEvent, useEffect, useRef, useState } from "react";
+import HelpTip from "@/components/HelpTip";
 import { ClipWindow, Report, api, authBlob } from "@/lib/api";
+import { THEME_EVENT } from "@/lib/theme";
 
 type HandleKey = "start" | "answerStart" | "end";
 
@@ -36,27 +38,53 @@ type SpeechWaveformProps = {
 const CHART_NOTE_MAX = 100;
 const NOTE_COLOR_DEFAULT = "#f8fafc";
 
-function noteColorValue(value?: string): string {
-  const raw = (value || "").trim();
-  return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw.toLowerCase() : NOTE_COLOR_DEFAULT;
+function cssVar(name: string, fallback: string): string {
+  if (typeof document === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
 
-const INK = {
-  paper: "#1a3a5c",
-  mid: "#4a7aa8",
-  wave: "#e2e8f0",
-  muted: "#b6c4d6",
-  question: "rgba(59, 130, 246, 0.22)",
-  answer: "rgba(20, 184, 166, 0.24)",
-  outside: "rgba(13, 23, 40, 0.28)",
-  questionInk: "#bfdbfe",
-  answerInk: "#99f6e4",
-  handleQ: "#3b82f6",
-  handleA: "#14b8a6",
-  playhead: "#f59e0b",
-  vsa: "#f1f5f9",
-  time: "#4ade80",
+function noteColorValue(value?: string): string {
+  const raw = (value || "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
+  const fromTheme = cssVar("--text", NOTE_COLOR_DEFAULT);
+  return /^#[0-9a-fA-F]{6}$/.test(fromTheme) ? fromTheme.toLowerCase() : NOTE_COLOR_DEFAULT;
+}
+
+type ChartInk = {
+  paper: string;
+  mid: string;
+  wave: string;
+  muted: string;
+  question: string;
+  answer: string;
+  outside: string;
+  questionInk: string;
+  answerInk: string;
+  handleQ: string;
+  handleA: string;
+  playhead: string;
+  vsa: string;
+  time: string;
 };
+
+function chartInk(): ChartInk {
+  return {
+    paper: cssVar("--chart-paper", "#1a3a5c"),
+    mid: cssVar("--chart-mid", "#4a7aa8"),
+    wave: cssVar("--chart-wave", "#e2e8f0"),
+    muted: cssVar("--chart-muted", "#b6c4d6"),
+    question: cssVar("--chart-question", "rgba(59, 130, 246, 0.22)"),
+    answer: cssVar("--chart-answer", "rgba(20, 184, 166, 0.24)"),
+    outside: cssVar("--chart-outside", "rgba(13, 23, 40, 0.28)"),
+    questionInk: cssVar("--chart-question-ink", "#bfdbfe"),
+    answerInk: cssVar("--chart-answer-ink", "#99f6e4"),
+    handleQ: cssVar("--secondary", "#3b82f6"),
+    handleA: cssVar("--primary", "#14b8a6"),
+    playhead: cssVar("--warn", "#f59e0b"),
+    vsa: cssVar("--chart-vsa", "#f1f5f9"),
+    time: cssVar("--chart-time", "#4ade80"),
+  };
+}
 
 function formatSecMs(seconds: number) {
   const msTotal = Math.max(0, Math.round(seconds * 1000));
@@ -80,9 +108,10 @@ function drawStartEndLabels(
   y: number,
   startSec?: number | null,
   endSec?: number | null,
+  ink: ChartInk = chartInk(),
 ) {
   if (startSec == null || endSec == null || !Number.isFinite(startSec) || !Number.isFinite(endSec)) return;
-  ctx.fillStyle = INK.time;
+  ctx.fillStyle = ink.time;
   ctx.font = canvasFont("600 13px");
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
@@ -102,6 +131,7 @@ function drawOscillogram(
   regions?: { start: number; answerStart: number; end: number } | null,
   handles?: boolean,
 ) {
+  const INK = chartInk();
   ctx.fillStyle = INK.paper;
   ctx.fillRect(0, 0, width, height);
   const mid = Math.floor(height / 2);
@@ -192,6 +222,7 @@ function drawStressChart(
   startSec?: number | null,
   endSec?: number | null,
 ) {
+  const INK = chartInk();
   ctx.fillStyle = INK.paper;
   ctx.fillRect(0, 0, width, height);
   const left = 8;
@@ -231,7 +262,7 @@ function drawStressChart(
     ctx.fillRect(x, baseline, 1, 6);
     ctx.fillText(String(Math.round(t)), x, baseline + 14);
   }
-  drawStartEndLabels(ctx, left, right, height - 6, startSec, endSec);
+  drawStartEndLabels(ctx, left, right, height - 6, startSec, endSec, INK);
 
   if (progress > 0) {
     const x = left + Math.min(1, progress) * innerW;
@@ -291,6 +322,7 @@ function drawCombChart(
   endSec?: number | null,
   axisOrigin = 0,
 ) {
+  const INK = chartInk();
   ctx.fillStyle = INK.paper;
   ctx.fillRect(0, 0, width, height);
   const left = 10;
@@ -333,7 +365,7 @@ function drawCombChart(
     ctx.fillRect(x, baseline, 1, 6);
     ctx.fillText((axisOrigin + t).toFixed(decimals), x, baseline + 14);
   }
-  drawStartEndLabels(ctx, left, right, height - 6, startSec, endSec);
+  drawStartEndLabels(ctx, left, right, height - 6, startSec, endSec, INK);
 
   if (progress > 0 && progress <= 1) {
     const x = left + progress * innerW;
@@ -452,6 +484,7 @@ export default function SpeechWaveform({
   const [combNote, setCombNote] = useState(combReportNote);
   const [vsaColor, setVsaColor] = useState(noteColorValue(vsaReportNoteColor));
   const [combColor, setCombColor] = useState(noteColorValue(combReportNoteColor));
+  const [themeTick, setThemeTick] = useState(0);
   const noteRef = useRef<HTMLInputElement | null>(null);
   const focusNoteRef = useRef(false);
   const [bounds, setBounds] = useState({
@@ -521,6 +554,19 @@ export default function SpeechWaveform({
   }, [vsaReportNote, combReportNote, vsaReportNoteColor, combReportNoteColor]);
 
   useEffect(() => {
+    function bump() {
+      setThemeTick((value) => value + 1);
+    }
+    window.addEventListener(THEME_EVENT, bump);
+    const observer = new MutationObserver(bump);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => {
+      window.removeEventListener(THEME_EVENT, bump);
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!audioPath) return;
     let alive = true;
     let created: string | null = null;
@@ -570,6 +616,7 @@ export default function SpeechWaveform({
     bounds.start,
     bounds.answerStart,
     bounds.end,
+    themeTick,
   ]);
 
   useEffect(() => {
@@ -623,7 +670,7 @@ export default function SpeechWaveform({
       chartStart,
       chartStart + tremorDuration,
     );
-  }, [spectrum, tremorDuration, tremorProgress, hasSpectrum, activeChart, chartStart]);
+  }, [spectrum, tremorDuration, tremorProgress, hasSpectrum, activeChart, chartStart, themeTick]);
 
   useEffect(() => {
     const canvas = combRef.current;
@@ -653,6 +700,7 @@ export default function SpeechWaveform({
     combAbsEnd,
     combViewStart,
     combViewDuration,
+    themeTick,
   ]);
 
   function toggle() {
@@ -957,12 +1005,33 @@ export default function SpeechWaveform({
               {playing ? "Pausa" : "Play"}
             </button>
           ) : null}
-          <span>{title}</span>
+          <div className="wave-studio-title">
+            {title}
+            <HelpTip title="Oscilograma">
+              <p>Es la onda del audio en el tiempo. Sirve para ver dónde empieza y termina cada frase.</p>
+              <p>
+                En un clip, el tramo azul es la <b>pregunta</b> y el tramo teal es la <b>respuesta</b>. Si el recorte
+                quedó corto o se pasó a la siguiente pregunta, use «Ajustar recorte» y arrastre los bordes.
+              </p>
+              <p>Ctrl + rueda: zoom. Ctrl + botón derecho: desplazar la vista.</p>
+            </HelpTip>
+          </div>
           {showRegions ? (
-            <small>
-              P {bounds.start.toFixed(2)}–{bounds.answerStart.toFixed(2)}s · R {bounds.answerStart.toFixed(2)}–
-              {bounds.end.toFixed(2)}s
-            </small>
+            <div className="wave-studio-times">
+              <small>
+                P {bounds.start.toFixed(2)}–{bounds.answerStart.toFixed(2)}s · R {bounds.answerStart.toFixed(2)}–
+                {bounds.end.toFixed(2)}s
+              </small>
+              <HelpTip title="Tiempos P y R">
+                <p>
+                  <b>P</b> es el intervalo de la pregunta, en segundos. <b>R</b> es el intervalo de la respuesta.
+                </p>
+                <p>
+                  En el ejemplo, P 81.10–84.05s cubre lo que dijo el interrogador y R 84.05–84.69s cubre la respuesta
+                  del evaluado. Esos recortes alimentan las gráficas VSA y peine.
+                </p>
+              </HelpTip>
+            </div>
           ) : (
             <em>{duration ? `${duration.toFixed(1)} s` : ""}</em>
           )}
@@ -1021,37 +1090,96 @@ export default function SpeechWaveform({
                 >
                   Gráfica peine
                 </button>
+                {activeChart === "comb" ? (
+                  <HelpTip title="Gráfica peine">
+                    <p>
+                      Muestra el patrón de microtemblores de la <b>respuesta</b> como una línea continua. El eje X
+                      queda abajo y toda la curva en el lado positivo.
+                    </p>
+                    <p>
+                      La etiqueta <b>70–400 Hz</b> es la banda de frecuencia analizada: cubre la voz y los
+                      microtemblores usados en VSA. El tiempo (por ejemplo 0.68 s) es la duración de esa respuesta.
+                    </p>
+                    <p>Los marcadores verdes indican el inicio y el fin de la respuesta, en segundos:milisegundos.</p>
+                  </HelpTip>
+                ) : (
+                  <HelpTip title="Gráfica VSA">
+                    <p>
+                      Curva de microtemblor de la respuesta. Se compara con la <b>línea base</b> (media de las
+                      preguntas de control del mismo evaluado).
+                    </p>
+                    <p>
+                      Un pico más alto no es por sí solo una mentira: es un indicio para revisar el clip, el recorte y
+                      el protocolo.
+                    </p>
+                  </HelpTip>
+                )}
               </>
             ) : (
-              <span>{hasComb ? "Gráfica peine · respuesta" : "Gráfica VSA · respuesta"}</span>
+              <div className="wave-studio-title">
+                {hasComb ? "Gráfica peine · respuesta" : "Gráfica VSA · respuesta"}
+                {hasComb ? (
+                  <HelpTip title="Gráfica peine">
+                    <p>
+                      Patrón de microtemblores de la respuesta en la banda 70–400 Hz. El tiempo indicado es la
+                      duración de esa respuesta.
+                    </p>
+                  </HelpTip>
+                ) : (
+                  <HelpTip title="Gráfica VSA">
+                    <p>Curva de microtemblor de la respuesta, para comparar con la línea base de control.</p>
+                  </HelpTip>
+                )}
+              </div>
             )}
             <div className="wave-chart-meta">
               {canToggleReportChart ? (
-                <label className="wave-chart-include">
-                  Adicionar al informe
-                  <input
-                    type="checkbox"
-                    checked={includeActive}
-                    onChange={(event) => {
-                      void toggleIncludeInReport(event.target.checked);
-                    }}
-                    aria-label={
-                      activeChart === "comb"
-                        ? "Adicionar gráfica peine al informe"
-                        : "Adicionar gráfica VSA al informe"
-                    }
-                  />
-                </label>
+                <div className="wave-chart-include">
+                  <HelpTip title="Adicionar al informe">
+                    <p>
+                      Si marca esta casilla, la gráfica actual (VSA o peine) entra al PDF. Al marcarla puede escribir
+                      una nota de hasta 100 caracteres y elegir el color del texto.
+                    </p>
+                    <p>
+                      En «Crear informe», las respuestas con peine marcado aparecen seleccionadas y se muestra la nota
+                      si la escribió.
+                    </p>
+                  </HelpTip>
+                  <label className="wave-chart-include-label">
+                    Adicionar al informe
+                    <input
+                      type="checkbox"
+                      checked={includeActive}
+                      onChange={(event) => {
+                        void toggleIncludeInReport(event.target.checked);
+                      }}
+                      aria-label={
+                        activeChart === "comb"
+                          ? "Adicionar gráfica peine al informe"
+                          : "Adicionar gráfica VSA al informe"
+                      }
+                    />
+                  </label>
+                </div>
               ) : null}
-              <em>
-                {activeChart === "comb"
-                  ? combSpan
-                    ? `${combSpan.toFixed(2)} s · 70–400 Hz`
-                    : ""
-                  : tremorDuration
-                    ? `${tremorDuration.toFixed(1)} s`
-                    : ""}
-              </em>
+              {activeChart === "comb" && combSpan ? (
+                <div className="wave-studio-times">
+                  <em>
+                    {combSpan.toFixed(2)} s · 70–400 Hz
+                  </em>
+                  <HelpTip title="Duración y banda 70–400 Hz">
+                    <p>
+                      El primer valor es la <b>duración de la respuesta</b> analizada (en este recorte, el tramo R).
+                    </p>
+                    <p>
+                      <b>70–400 Hz</b> es la banda de frecuencia del peine: ahí se observa la voz y los microtemblores
+                      que usa el análisis VSA. No es un rango de “estrés”; es el filtro del gráfico.
+                    </p>
+                  </HelpTip>
+                </div>
+              ) : tremorDuration ? (
+                <em>{tremorDuration.toFixed(1)} s</em>
+              ) : null}
             </div>
           </div>
           {hasSpectrum ? (

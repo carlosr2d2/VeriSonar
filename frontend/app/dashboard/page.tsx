@@ -96,23 +96,23 @@ export default function DashboardPage() {
         <h3>Carga de análisis</h3>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={chart} barCategoryGap="28%">
-            <CartesianGrid stroke="#23466F" strokeDasharray="3 6" vertical={false} />
+            <CartesianGrid stroke="var(--line)" strokeDasharray="3 6" vertical={false} />
             <XAxis
               dataKey="name"
-              stroke="#94A3B8"
+              stroke="var(--muted)"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#94A3B8", fontSize: 12 }}
+              tick={{ fill: "var(--muted)", fontSize: 12 }}
             />
             <YAxis
-              stroke="#94A3B8"
+              stroke="var(--muted)"
               allowDecimals={false}
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#94A3B8", fontSize: 12 }}
+              tick={{ fill: "var(--muted)", fontSize: 12 }}
             />
             <Tooltip
-              cursor={{ fill: "rgba(248, 250, 252, 0.04)" }}
+              cursor={{ fill: "var(--chart-cursor)" }}
               content={<LoadTooltip />}
               wrapperStyle={{ outline: "none" }}
             />

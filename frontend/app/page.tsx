@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import ThemeToggle from "@/components/ThemeToggle";
 import { API_BASE, DemoAccount, login, roleLabel } from "@/lib/api";
 
 const FALLBACK_ACCOUNTS: DemoAccount[] = [
@@ -57,6 +58,9 @@ export default function HomePage() {
 
   return (
     <div className="login-wrap">
+      <div className="login-theme">
+        <ThemeToggle />
+      </div>
       <div className="login-layout">
         <form className="login-card" onSubmit={onSubmit}>
           <p className="login-kicker">Plataforma de análisis</p>

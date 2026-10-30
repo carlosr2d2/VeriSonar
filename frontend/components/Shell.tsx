@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 import { SessionUser, clearSession, getSession, getToken, roleLabel } from "@/lib/api";
 
 export default function Shell({ children, title, subtitle }: { children: React.ReactNode; title: string; subtitle?: string }) {
@@ -47,6 +48,7 @@ export default function Shell({ children, title, subtitle }: { children: React.R
             <span>{roleLabel(session.role)}</span>
           </div>
         ) : null}
+        <ThemeToggle />
         <button
           className="btn secondary"
           onClick={() => {
